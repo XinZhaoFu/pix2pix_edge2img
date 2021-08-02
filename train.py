@@ -1,67 +1,85 @@
 import datetime
-import os
 import tensorflow as tf
-from loss.discriminator_loss import discriminator_loss
-from loss.generator_loss import generator_loss
+from loss.loss import discriminator_loss, generator_loss
 from model.discriminator import Discriminator
 from model.generator import Generator
-from data_utils.data_loader import get_dataset
+from data_utils.data_loader import Data_Loader
 
-generator = Generator()
-discriminator = Discriminator()
-
-generator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
-discriminator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
-
-checkpoint_dir = './checkpoints'
-checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt")
-checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,
-                                 discriminator_optimizer=discriminator_optimizer,
-                                 generator=generator,
-                                 discriminator=discriminator)
-log_dir = './log/'
-summary_writer = tf.summary.create_file_writer(
-    log_dir + "fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
+gpus = tf.config.list_physical_devices('GPU')
+if len(gpus) > 0:
+    tf.config.experimental.set_memory_growth(gpus[0], True)
 
 
-@tf.function
-def train_step(input_image, target, step):
-    with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-        gen_output = generator(input_image, training=True)
+class Pix2pix_Trainer:
+    def __init__(self, ex_name, epochs, batch_size, checkpoint_dir, data_size):
+        self.ex_name = ex_name
+        self.epochs = epochs
+        self.batch_size = batch_size
+        self.checkpoint_dir = checkpoint_dir
+        self.data_size = data_size
 
-        disc_real_output = discriminator([input_image, target], training=True)
-        disc_generated_output = discriminator([input_image, gen_output], training=True)
+        self.data_loader = Data_Loader(batch_size=self.batch_size, size=self.data_size)
+        self.train_datasets = self.data_loader.get_train_datasets()
+        self.val_datasets = self.data_loader.get_val_datasets()
+        self.generator = Generator()
+        self.discriminator = Discriminator()
 
-        gen_total_loss, gen_gan_loss, gen_l1_loss = generator_loss(disc_generated_output, gen_output, target)
-        disc_loss = discriminator_loss(disc_real_output, disc_generated_output)
+        self.generator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
+        self.discriminator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
 
-    generator_gradients = gen_tape.gradient(gen_total_loss,
-                                            generator.trainable_variables)
-    discriminator_gradients = disc_tape.gradient(disc_loss,
-                                                 discriminator.trainable_variables)
+        self.checkpoint = tf.train.Checkpoint(generator_optimizer=self.generator_optimizer,
+                                              discriminator_optimizer=self.discriminator_optimizer,
+                                              generator=self.generator,
+                                              discriminator=self.discriminator)
+        self.ck_manager = tf.train.CheckpointManager(self.checkpoint,
+                                                     directory=self.checkpoint_dir,
+                                                     max_to_keep=10,
+                                                     checkpoint_name=self.ex_name + '_ck')
+        self.log_dir = './log/'
+        self.summary_writer = tf.summary.create_file_writer(
+            self.log_dir + datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 
-    generator_optimizer.apply_gradients(zip(generator_gradients,
-                                            generator.trainable_variables))
-    discriminator_optimizer.apply_gradients(zip(discriminator_gradients,
-                                                discriminator.trainable_variables))
+    def train(self, steps=40000):
+        for step, (input_image, target) in self.train_datasets.repeat().take(steps).enumerate():
+            self.train_step(input_image, target, step)
+            if (step + 1) % 100 == 0:
+                print(f"Step: {step // 100}h")
+            if (step + 1) % 1000 == 0:
+                self.ck_manager.save()
 
-    with summary_writer.as_default():
-        tf.summary.scalar('gen_total_loss', gen_total_loss, step=step // 1000)
-        tf.summary.scalar('gen_gan_loss', gen_gan_loss, step=step // 1000)
-        tf.summary.scalar('gen_l1_loss', gen_l1_loss, step=step // 1000)
-        tf.summary.scalar('disc_loss', disc_loss, step=step // 1000)
+    @tf.function
+    def train_step(self, input_image, target, step):
+        with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
+            gen_output = self.generator(input_image, training=True)
+
+            disc_real_output = self.discriminator([input_image, target], training=True)
+            disc_generated_output = self.discriminator([input_image, gen_output], training=True)
+
+            gen_total_loss, gen_gan_loss, gen_l1_loss = generator_loss(disc_generated_output, gen_output, target)
+            disc_loss = discriminator_loss(disc_real_output, disc_generated_output)
+
+        generator_gradients = gen_tape.gradient(gen_total_loss, self.generator.trainable_variables)
+        discriminator_gradients = disc_tape.gradient(disc_loss, self.discriminator.trainable_variables)
+
+        self.generator_optimizer.apply_gradients(zip(generator_gradients, self.generator.trainable_variables))
+        self.discriminator_optimizer.apply_gradients(
+            zip(discriminator_gradients, self.discriminator.trainable_variables))
+
+        with self.summary_writer.as_default():
+            tf.summary.scalar('gen_total_loss', gen_total_loss, step=step // 1000)
+            tf.summary.scalar('gen_gan_loss', gen_gan_loss, step=step // 1000)
+            tf.summary.scalar('gen_l1_loss', gen_l1_loss, step=step // 1000)
+            tf.summary.scalar('disc_loss', disc_loss, step=step // 1000)
 
 
-def fit(train_ds, test_ds, steps):
-    example_input, example_target = next(iter(test_ds.take(1)))
+def main():
+    ex_name = 'pix2pix_256'
+    checkpoint_dir = './checkpoints/pix2pix_checkpoints/'
 
-    for step, (input_image, target) in train_ds.repeat().take(steps).enumerate():
-        train_step(input_image, target, step)
-        if (step + 1) % 10 == 0:
-            print('.', end='', flush=True)
-        if (step + 1) % 1000 == 0:
-            checkpoint.save(file_prefix=checkpoint_prefix)
+    trainer = Pix2pix_Trainer(ex_name=ex_name, epochs=1, batch_size=4, checkpoint_dir=checkpoint_dir)
+    trainer.train()
 
 
-train_dataset, test_dataset = get_dataset()
-fit(train_dataset, test_dataset, steps=40000)
+if __name__ == '__main__':
+    main()
