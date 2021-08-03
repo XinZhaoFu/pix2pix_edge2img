@@ -6,7 +6,7 @@ from data_utils.utils import shuffle_file
 class Data_Loader:
     def __init__(self,
                  buffer_size=420,
-                 batch_size=8,
+                 batch_size=1,
                  size=256):
         self.buffer_size = buffer_size
         self.batch_size = batch_size

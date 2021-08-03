@@ -1,7 +1,7 @@
 from glob import glob
 from shutil import copyfile
 from tqdm import tqdm
-from utils import shuffle_file
+from utils import shuffle_file, recreate_dir
 
 
 def distribution_datasets():
@@ -14,6 +14,10 @@ def distribution_datasets():
     train_label_path = '../data/train/label/'
     val_img_path = '../data/val/img/'
     val_label_path = '../data/val/label/'
+    recreate_dir(train_img_path)
+    recreate_dir(train_label_path)
+    recreate_dir(val_img_path)
+    recreate_dir(val_label_path)
 
     ds_img_file_list = glob(datasets_img_path + '*.*')
     ds_label_file_list = glob(datasets_label_path + '*.*')
@@ -35,7 +39,7 @@ def distribution_datasets():
         ds_label_name = ds_label_file.split('/')[-1]
 
         copyfile(ds_img_file, train_img_path + ds_img_name)
-        copyfile(ds_img_file, train_label_path + ds_label_name)
+        copyfile(ds_label_file, train_label_path + ds_label_name)
 
     for ds_img_file, ds_label_file in tqdm(zip(val_img_file_list, val_label_file_list),
                                            total=len(val_label_file_list)):
@@ -43,7 +47,7 @@ def distribution_datasets():
         ds_label_name = ds_label_file.split('/')[-1]
 
         copyfile(ds_img_file, val_img_path + ds_img_name)
-        copyfile(ds_img_file, val_label_path + ds_label_name)
+        copyfile(ds_label_file, val_label_path + ds_label_name)
 
 
 if __name__ == '__main__':

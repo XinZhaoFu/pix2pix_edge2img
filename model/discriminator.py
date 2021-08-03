@@ -16,9 +16,8 @@ def Discriminator():
     down3 = downsample(256, 4)(down2)  # (batch_size, 32, 32, 256)
 
     zero_pad1 = tf.keras.layers.ZeroPadding2D()(down3)  # (batch_size, 34, 34, 256)
-    conv = tf.keras.layers.Conv2D(512, 4, strides=1,
-                                  kernel_initializer=initializer,
-                                  use_bias=False)(zero_pad1)  # (batch_size, 31, 31, 512)
+    conv = tf.keras.layers.Conv2D(512, 4, strides=1, kernel_initializer=initializer, use_bias=False)(zero_pad1)
+    # (batch_size, 31, 31, 512)
 
     batchnorm1 = tf.keras.layers.BatchNormalization()(conv)
 

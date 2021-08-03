@@ -5,7 +5,7 @@
       <paths name="dell@10.35.33.235:22 password">
         <serverdata>
           <mappings>
-            <mapping deploy="/home/dell/workspace/pix2pix" local="$PROJECT_DIR$" />
+            <mapping deploy="/workspace/pix2pix" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>
