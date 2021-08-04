@@ -3,13 +3,16 @@ from model.generator import Generator
 import numpy as np
 import tensorflow as tf
 import cv2
+from tqdm import tqdm
+from glob import glob
 
 
 class Pix2pix_predicter:
-    def __init__(self, ex_name, checkpoint_dir):
+    def __init__(self, ex_name, checkpoint_dir, data_size):
+        self.data_size = data_size
         self.ex_name = ex_name
-        self.generator = Generator()
-        self.discriminator = Discriminator()
+        self.generator = Generator(data_size=self.data_size)
+        self.discriminator = Discriminator(data_size=self.data_size)
         self.checkpoint_dir = checkpoint_dir
 
         self.generator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
@@ -24,36 +27,57 @@ class Pix2pix_predicter:
                                                      max_to_keep=1,
                                                      checkpoint_name=self.ex_name + '_ck')
 
-    def predict(self):
         self.checkpoint.restore(self.ck_manager.latest_checkpoint)
         if self.ck_manager.latest_checkpoint:
             print("[info]Restored from {}".format(self.ck_manager.latest_checkpoint))
         else:
             print("[info]Initializing from scratch.")
 
-        test_input = np.zeros(shape=(1, 256, 256, 3), dtype=np.float32)
-        ori_img = cv2.imread('./data/val/img/apple_pie_003158095.jpg')
-        ori_img = cv2.resize(ori_img, dsize=(256, 256))
-        img = (ori_img / 127.5) - 1
+    def predict(self, img):
+        test_input = np.zeros(shape=(1, self.data_size, self.data_size, 3), dtype=np.float32)
+        img = (img / 127.5) - 1
         test_input[0:, :, :, :] = img[:, :, :]
+
         prediction = self.generator(test_input, training=False)
 
         prediction = (prediction * 0.5 + 0.5) * 256
-        prediction_output = np.empty(shape=(256, 256, 3), dtype=np.uint8)
+        prediction_output = np.empty(shape=(self.data_size, self.data_size, 3), dtype=np.uint8)
         prediction_output[:, :, :] = prediction[0:, :, :, :]
-        # print(prediction_output)
-        res = np.zeros(shape=(256, 512, 3), dtype=np.uint8)
-        res[:, :256, :] = ori_img
-        res[:, 256:, :] = prediction_output
 
-        cv2.imwrite('./data/res/test1.jpg', res)
+        return prediction_output
 
 
 def main():
+    ex_name = 'pix2pix_512'
     checkpoint_dir = './checkpoints/pix2pix_checkpoints/'
-    ex_name = 'pix2pix_256'
-    predicter = Pix2pix_predicter(ex_name, checkpoint_dir)
-    predicter.predict()
+    data_size = 512
+
+    val_img_path = './data/val/img/'
+    val_label_path = './data/val/label/'
+    save_path = './data/res/'
+
+    val_img_file_list = glob(val_img_path + '*.*')
+    val_label_file_list = glob(val_label_path + '*.*')
+    assert len(val_img_file_list) == len(val_label_file_list)
+    val_img_file_list.sort()
+    val_label_file_list.sort()
+
+    predicter = Pix2pix_predicter(ex_name=ex_name, checkpoint_dir=checkpoint_dir, data_size=data_size)
+
+    for val_img_file, val_label_file in tqdm(zip(val_img_file_list, val_label_file_list), total=len(val_img_file_list)):
+        val_img = cv2.imread(val_img_file)
+        val_label = cv2.imread(val_label_file)
+        val_img = cv2.resize(val_img, dsize=(data_size, data_size))
+        val_label = cv2.resize(val_label, dsize=(data_size, data_size))
+        res_name = val_img_file.split('/')[-1]
+        predict_img = predicter.predict(val_img)
+
+        res = np.zeros(shape=(data_size, data_size * 3, 3), dtype=np.uint8)
+        res[:, :data_size, :] = val_img
+        res[:, data_size:data_size*2] = val_label
+        res[:, data_size*2:, :] = predict_img
+
+        cv2.imwrite(save_path + res_name, res)
 
 
 if __name__ == '__main__':
