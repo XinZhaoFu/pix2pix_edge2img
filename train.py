@@ -28,8 +28,8 @@ class Pix2pix_Trainer:
         self.data_loader = Data_Loader(batch_size=self.batch_size, size=self.data_size)
         self.train_datasets = self.data_loader.get_train_datasets()
         self.val_datasets = self.data_loader.get_val_datasets()
-        self.generator = Generator(data_size=self.data_size)
-        self.discriminator = Discriminator(data_size=self.data_size)
+        self.generator = Generator(filters=64, layer_nums=8, output_channel=3)
+        self.discriminator = Discriminator()
 
         self.generator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
         self.discriminator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
@@ -93,12 +93,12 @@ class Pix2pix_Trainer:
 
 def main():
     ex_name = 'pix2pix_512'
-    checkpoint_dir = './checkpoints/pix2pix_checkpoints/'
+    checkpoint_dir = './checkpoints/pix2pix512_checkpoints/'
 
     start_time = datetime.datetime.now()
     trainer = Pix2pix_Trainer(ex_name=ex_name,
                               epochs=400*1000,
-                              batch_size=8,
+                              batch_size=1,
                               checkpoint_dir=checkpoint_dir,
                               data_size=512,
                               load_weights=True)

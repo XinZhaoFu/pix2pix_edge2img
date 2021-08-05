@@ -11,8 +11,8 @@ class Pix2pix_predicter:
     def __init__(self, ex_name, checkpoint_dir, data_size):
         self.data_size = data_size
         self.ex_name = ex_name
-        self.generator = Generator(data_size=self.data_size)
-        self.discriminator = Discriminator(data_size=self.data_size)
+        self.generator = Generator()
+        self.discriminator = Discriminator()
         self.checkpoint_dir = checkpoint_dir
 
         self.generator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
@@ -49,7 +49,7 @@ class Pix2pix_predicter:
 
 def main():
     ex_name = 'pix2pix_512'
-    checkpoint_dir = './checkpoints/pix2pix_checkpoints/'
+    checkpoint_dir = './checkpoints/pix2pix512_checkpoints/'
     data_size = 512
 
     val_img_path = './data/val/img/'

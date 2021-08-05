@@ -1,28 +1,37 @@
 import tensorflow as tf
-from model.utils import downsample
+from model.utils import Down_Sample, Con_Bn_Act
+from tensorflow.keras import Model
+from tensorflow.keras.layers import LeakyReLU, concatenate, Conv2D
 
 
-def Discriminator(data_size):
-    initializer = tf.random_normal_initializer(0., 0.02)
+class Discriminator(Model):
+    def __init__(self):
+        super(Discriminator, self).__init__()
 
-    inp = tf.keras.layers.Input(shape=[data_size, data_size, 3], name='input_image')
-    tar = tf.keras.layers.Input(shape=[data_size, data_size, 3], name='target_image')
+        self.down1 = Down_Sample(filters=64)
+        self.down2 = Down_Sample(filters=128)
+        self.down3 = Down_Sample(filters=256)
 
-    x = tf.keras.layers.concatenate([inp, tar])
+        self.con = Con_Bn_Act(filters=512,
+                              kernel_size=3,
+                              strides=1,
+                              kernel_initializer=tf.random_normal_initializer(0., 0.02),
+                              activation=LeakyReLU(),
+                              padding='same')
 
-    down1 = downsample(64, 4, False)(x)
-    down2 = downsample(128, 4)(down1)
-    down3 = downsample(256, 4)(down2)
+        self.out = Conv2D(filters=1,
+                          kernel_size=3,
+                          strides=1,
+                          kernel_initializer=tf.random_normal_initializer(0., 0.02),
+                          padding='same')
 
-    zero_pad1 = tf.keras.layers.ZeroPadding2D()(down3)
-    conv = tf.keras.layers.Conv2D(512, 4, strides=1, kernel_initializer=initializer, use_bias=False)(zero_pad1)
+    def call(self, inputs, training=None, mask=None):
+        [inp, tar] = inputs
+        concat = concatenate([inp, tar], axis=3)
+        down1 = self.down1(concat)
+        down2 = self.down2(down1)
+        down3 = self.down3(down2)
+        con = self.con(down3)
+        out = self.out(con)
 
-    batchnorm1 = tf.keras.layers.BatchNormalization()(conv)
-
-    leaky_relu = tf.keras.layers.LeakyReLU()(batchnorm1)
-
-    zero_pad2 = tf.keras.layers.ZeroPadding2D()(leaky_relu)
-
-    last = tf.keras.layers.Conv2D(1, 4, strides=1, kernel_initializer=initializer)(zero_pad2)
-
-    return tf.keras.Model(inputs=[inp, tar], outputs=last)
+        return out

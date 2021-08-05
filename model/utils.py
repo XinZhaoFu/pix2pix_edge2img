@@ -1,37 +1,102 @@
 import tensorflow as tf
+from tensorflow.keras.layers import Conv2D, BatchNormalization, Activation, LeakyReLU, Conv2DTranspose
+from tensorflow.keras import Model, regularizers
 
 
-def downsample(filters, size, apply_batchnorm=True):
-    initializer = tf.random_normal_initializer(0., 0.02)
+class Down_Sample(Model):
+    def __init__(self, filters):
+        super().__init__()
+        self.down = Con_Bn_Act(filters=filters,
+                               strides=2,
+                               kernel_initializer=tf.random_normal_initializer(0., 0.02),
+                               activation=LeakyReLU())
 
-    result = tf.keras.Sequential()
-    result.add(
-        tf.keras.layers.Conv2D(filters, size, strides=2, padding='same',
-                               kernel_initializer=initializer, use_bias=False))
+    def call(self, inputs, training=None, mask=None):
+        out = self.down(inputs)
 
-    if apply_batchnorm:
-        result.add(tf.keras.layers.BatchNormalization())
-
-    result.add(tf.keras.layers.LeakyReLU())
-
-    return result
+        return out
 
 
-def upsample(filters, size, apply_dropout=False):
-    initializer = tf.random_normal_initializer(0., 0.02)
+class Up_Sample(Model):
+    def __init__(self, filters):
+        super().__init__()
+        self.con_transpose = Conv2DTranspose(filters=filters,
+                                             kernel_size=3,
+                                             strides=2,
+                                             padding='same',
+                                             kernel_initializer=tf.random_normal_initializer(0., 0.02),
+                                             use_bias=False)
+        self.bn = BatchNormalization()
+        self.act = LeakyReLU()
 
-    result = tf.keras.Sequential()
-    result.add(
-        tf.keras.layers.Conv2DTranspose(filters, size, strides=2,
-                                        padding='same',
-                                        kernel_initializer=initializer,
-                                        use_bias=False))
+    def call(self, inputs, training=None, mask=None):
+        con_transpose = self.con_transpose(inputs)
+        bn = self.bn(con_transpose)
+        out = self.act(bn)
 
-    result.add(tf.keras.layers.BatchNormalization())
+        return out
 
-    if apply_dropout:
-        result.add(tf.keras.layers.Dropout(0.5))
 
-    result.add(tf.keras.layers.ReLU())
+class Con_Bn_Act(Model):
+    def __init__(self,
+                 filters,
+                 kernel_size=(3, 3),
+                 padding='same',
+                 strides=1,
+                 activation=None,
+                 dilation_rate=1,
+                 name=None,
+                 kernel_regularizer=False,
+                 kernel_initializer=None,
+                 train_able=True):
+        super(Con_Bn_Act, self).__init__()
+        self.kernel_regularizer = kernel_regularizer
+        self.filters = filters
+        self.kernel_size = kernel_size
+        self.padding = padding
+        self.strides = strides
+        self.activation = activation
+        self.dilation_rate = dilation_rate
+        self.block_name = name
+        self.kernel_initializer = kernel_initializer
+        self.train_able = train_able
 
-    return result
+        if self.activation is None:
+            self.activation = 'relu'
+
+        if self.kernel_initializer is None:
+            self.kernel_initializer = 'glorot_uniform'
+
+        if self.kernel_regularizer:
+            self.kernel_regularizer = regularizers.l2()
+        else:
+            self.kernel_regularizer = None
+
+        # kernel_initializer_special_cases = ['glorot_uniform',
+        # 'he_normal', 'he_uniform', 'lecun_normal', 'lecun_uniform']
+        self.con = Conv2D(filters=self.filters,
+                          kernel_size=self.kernel_size,
+                          padding=self.padding,
+                          strides=self.strides,
+                          use_bias=False,
+                          dilation_rate=(self.dilation_rate, self.dilation_rate),
+                          name=self.block_name,
+                          kernel_regularizer=self.kernel_regularizer,
+                          kernel_initializer=self.kernel_initializer)
+
+        if self.train_able is False:
+            self.con.trainable = False
+
+        self.bn = BatchNormalization()
+
+        if self.activation != 'not':
+            self.act = Activation(self.activation)
+
+    def call(self, inputs, training=None, mask=None):
+        con = self.con(inputs)
+        bn = self.bn(con)
+        if self.kernel_size == (1, 1) or self.activation == 'not':
+            out = bn
+        else:
+            out = self.act(bn)
+        return out
