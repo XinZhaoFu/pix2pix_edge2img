@@ -1,8 +1,7 @@
 import datetime
 import tensorflow as tf
-from loss.loss import discriminator_loss, generator_loss
-from model.discriminator import Discriminator
-from model.generator import Generator
+from loss.pix2pix_loss import discriminator_loss, generator_loss
+from model.pix2pix import Generator, Discriminator
 from data_utils.data_loader import Data_Loader
 # from tensorflow.keras import mixed_precision
 
@@ -101,7 +100,7 @@ def main():
                               batch_size=1,
                               checkpoint_dir=checkpoint_dir,
                               data_size=512,
-                              load_weights=True)
+                              load_weights=False)
     trainer.train()
 
     end_time = datetime.datetime.now()

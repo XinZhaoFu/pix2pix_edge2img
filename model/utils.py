@@ -1,40 +1,5 @@
-import tensorflow as tf
-from tensorflow.keras.layers import Conv2D, BatchNormalization, Activation, LeakyReLU, Conv2DTranspose
+from tensorflow.keras.layers import Conv2D, BatchNormalization, Activation
 from tensorflow.keras import Model, regularizers
-
-
-class Down_Sample(Model):
-    def __init__(self, filters):
-        super().__init__()
-        self.down = Con_Bn_Act(filters=filters,
-                               strides=2,
-                               kernel_initializer=tf.random_normal_initializer(0., 0.02),
-                               activation=LeakyReLU())
-
-    def call(self, inputs, training=None, mask=None):
-        out = self.down(inputs)
-
-        return out
-
-
-class Up_Sample(Model):
-    def __init__(self, filters):
-        super().__init__()
-        self.con_transpose = Conv2DTranspose(filters=filters,
-                                             kernel_size=3,
-                                             strides=2,
-                                             padding='same',
-                                             kernel_initializer=tf.random_normal_initializer(0., 0.02),
-                                             use_bias=False)
-        self.bn = BatchNormalization()
-        self.act = LeakyReLU()
-
-    def call(self, inputs, training=None, mask=None):
-        con_transpose = self.con_transpose(inputs)
-        bn = self.bn(con_transpose)
-        out = self.act(bn)
-
-        return out
 
 
 class Con_Bn_Act(Model):

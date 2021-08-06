@@ -1,5 +1,4 @@
-from model.discriminator import Discriminator
-from model.generator import Generator
+from model.pix2pix import Generator, Discriminator
 import numpy as np
 import tensorflow as tf
 import cv2
@@ -40,7 +39,10 @@ class Pix2pix_predicter:
 
         prediction = self.generator(test_input, training=False)
 
-        prediction = (prediction * 0.5 + 0.5) * 256
+        prediction = (prediction * 0.5 + 0.5) * 255
+        # prediction = np.array(prediction, dtype=np.int)
+        # prediction = np.squeeze(prediction)
+        # (rows, cols, channels) = np.where(prediction > 255)
         prediction_output = np.empty(shape=(self.data_size, self.data_size, 3), dtype=np.uint8)
         prediction_output[:, :, :] = prediction[0:, :, :, :]
 
