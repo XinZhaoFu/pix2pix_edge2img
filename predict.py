@@ -38,6 +38,7 @@ class Pix2pix_predicter:
         test_input[0:, :, :, :] = img[:, :, :]
 
         prediction = self.generator(test_input, training=False)
+        # print(prediction)
 
         prediction = (prediction * 0.5 + 0.5) * 255
         # prediction = np.array(prediction, dtype=np.int)
@@ -50,9 +51,9 @@ class Pix2pix_predicter:
 
 
 def main():
-    ex_name = 'pix2pix_512'
-    checkpoint_dir = './checkpoints/pix2pix512_checkpoints/'
-    data_size = 512
+    ex_name = 'pix2pix_256'
+    checkpoint_dir = './checkpoints/pix2pix256_checkpoints/'
+    data_size = 256
 
     val_img_path = './data/val/img/'
     val_label_path = './data/val/label/'
@@ -63,6 +64,9 @@ def main():
     assert len(val_img_file_list) == len(val_label_file_list)
     val_img_file_list.sort()
     val_label_file_list.sort()
+
+    # val_img_file_list = val_img_file_list[:1]
+    # val_label_file_list = val_label_file_list[:1]
 
     predicter = Pix2pix_predicter(ex_name=ex_name, checkpoint_dir=checkpoint_dir, data_size=data_size)
 

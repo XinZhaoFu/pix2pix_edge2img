@@ -123,6 +123,7 @@ class Generator(Model):
 #                           kernel_size=3,
 #                           strides=1,
 #                           padding='same',
+#                           kernel_initializer=tf.random_normal_initializer(0., 0.02),
 #                           activation='tanh')  # 512
 #
 #     def call(self, inputs, training=None, mask=None):
