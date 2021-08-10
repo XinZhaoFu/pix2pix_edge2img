@@ -1,7 +1,8 @@
 import datetime
 import tensorflow as tf
 from loss.pix2pix_loss import discriminator_loss, generator_loss
-from model.pix2pix import Generator, Discriminator
+# from model.pix2pix import Generator, Discriminator
+from model.pix2pixhd import Generator, Discriminator
 from data_utils.data_loader import Data_Loader
 # from tensorflow.keras import mixed_precision
 
@@ -27,7 +28,8 @@ class Pix2pix_Trainer:
         self.data_loader = Data_Loader(batch_size=self.batch_size, size=self.data_size)
         self.train_datasets = self.data_loader.get_train_datasets()
         self.val_datasets = self.data_loader.get_val_datasets()
-        self.generator = Generator(filters=64, layer_nums=8, output_channel=3)
+        print(self.train_datasets)
+        self.generator = Generator()
         self.discriminator = Discriminator()
 
         self.generator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
@@ -91,16 +93,16 @@ class Pix2pix_Trainer:
 
 
 def main():
-    ex_name = 'pix2pix_256'
-    checkpoint_dir = './checkpoints/pix2pix256_checkpoints/'
+    ex_name = 'pix2pixhd_256'
+    checkpoint_dir = './checkpoints/pix2pixhd256_checkpoints/'
 
     start_time = datetime.datetime.now()
     trainer = Pix2pix_Trainer(ex_name=ex_name,
                               epochs=10*1000,
-                              batch_size=1,
+                              batch_size=8,
                               checkpoint_dir=checkpoint_dir,
                               data_size=256,
-                              load_weights=False)
+                              load_weights=True)
     trainer.train()
 
     end_time = datetime.datetime.now()

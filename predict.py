@@ -41,9 +41,6 @@ class Pix2pix_predicter:
         # print(prediction)
 
         prediction = (prediction * 0.5 + 0.5) * 255
-        # prediction = np.array(prediction, dtype=np.int)
-        # prediction = np.squeeze(prediction)
-        # (rows, cols, channels) = np.where(prediction > 255)
         prediction_output = np.empty(shape=(self.data_size, self.data_size, 3), dtype=np.uint8)
         prediction_output[:, :, :] = prediction[0:, :, :, :]
 
@@ -51,9 +48,9 @@ class Pix2pix_predicter:
 
 
 def main():
-    ex_name = 'pix2pix_256'
-    checkpoint_dir = './checkpoints/pix2pix256_checkpoints/'
-    data_size = 256
+    ex_name = 'pix2pixhd_512'
+    checkpoint_dir = './checkpoints/pix2pixhd512_checkpoints/'
+    data_size = 512
 
     val_img_path = './data/val/img/'
     val_label_path = './data/val/label/'

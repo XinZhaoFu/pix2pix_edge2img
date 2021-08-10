@@ -1,5 +1,5 @@
 from tensorflow.keras.layers import Conv2D, BatchNormalization, Activation
-from tensorflow.keras import Model, regularizers
+from tensorflow.keras import Model, regularizers, Sequential
 
 
 class Con_Bn_Act(Model):
@@ -58,10 +58,34 @@ class Con_Bn_Act(Model):
             self.act = Activation(self.activation)
 
     def call(self, inputs, training=None, mask=None):
+        # print(inputs)
         con = self.con(inputs)
         bn = self.bn(con)
         if self.kernel_size == (1, 1) or self.activation == 'not':
             out = bn
         else:
             out = self.act(bn)
+        return out
+
+
+class CBR_Block(Model):
+    def __init__(self, filters, num_cbr=1, block_name=None):
+        super(CBR_Block, self).__init__()
+        self.filters = filters
+        self.num_cbr = num_cbr
+        self.block_name = None
+        if block_name is not None and type(block_name) == str:
+            self.block_name = block_name
+
+        self.con_blocks = Sequential()
+        for index in range(self.num_cbr):
+            if self.block_name is not None:
+                block = Con_Bn_Act(filters=self.filters, name=self.block_name + '_Con_Block_' + str(index+1))
+            else:
+                block = Con_Bn_Act(filters=self.filters, name='Con_Block_' + str(index + 1))
+            self.con_blocks.add(block)
+
+    def call(self, inputs, training=None, mask=None):
+        out = self.con_blocks(inputs)
+
         return out

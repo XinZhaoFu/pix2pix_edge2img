@@ -33,9 +33,9 @@ class Data_Loader:
 
     def load_image_label(self, img_file, label_file):
         img = tf.io.read_file(img_file)
-        img = tf.image.decode_jpeg(img)
+        img = tf.image.decode_jpeg(img, channels=3)
         label = tf.io.read_file(label_file)
-        label = tf.image.decode_jpeg(label)
+        label = tf.image.decode_jpeg(label, channels=3)
 
         img = tf.cast(img, tf.float32)
         label = tf.cast(label, tf.float32)

@@ -1,7 +1,7 @@
 import tensorflow as tf
 from model.utils import Con_Bn_Act
 from tensorflow.keras import Model
-from tensorflow.keras.layers import LeakyReLU, concatenate, Conv2D, Conv2DTranspose, BatchNormalization, Activation
+from tensorflow.keras.layers import LeakyReLU, concatenate, Conv2D, Conv2DTranspose, BatchNormalization
 
 
 class Generator(Model):
@@ -148,23 +148,6 @@ class Generator(Model):
 #         out = self.out(up1)
 #
 #         return out
-
-
-class Vgg19_Discriminator(Model):
-    def __init__(self, input_shape, requires_grad=False, mixed_precision=False):
-        super(Vgg19_Discriminator, self).__init__()
-        m_tf = tf.keras.applications.vgg19.VGG19(include_top=False, input_shape=input_shape)
-        layer_ids = [2, 5, 8, 13, 18]
-        if mixed_precision:
-            base_model_outputs = [Activation('linear', dtype='float32')(m_tf.layers[id].output) for id in
-                                  layer_ids]
-        else:
-            base_model_outputs = [m_tf.layers[id].output for id in layer_ids]
-        self.model = Model(inputs=m_tf.input, outputs=base_model_outputs)
-        self.model.trainable = False
-
-    def call(self, inputs, training=None, mask=None):
-        return self.model(inputs)
 
 
 class Discriminator(Model):

@@ -1,7 +1,8 @@
 from tensorflow.keras import Model, Sequential
-from tensorflow.keras.layers import BatchNormalization, Conv2D, ReLU, Conv2DTranspose
+from tensorflow.keras.layers import BatchNormalization, Conv2D, ReLU, Conv2DTranspose, LeakyReLU, concatenate
 import tensorflow as tf
 from model.utils import Con_Bn_Act
+from model.pix2pix import Down_Sample
 
 
 class Generator(Model):
@@ -18,7 +19,7 @@ class Generator(Model):
 
         self.res_blocks = Sequential()
         for _ in range(self.residual_num):
-            block = ResnetBlock(filters=self.filters)
+            block = ResnetBlock(filters=self.filters * 4)
             self.res_blocks.add(block)
 
         self.up3 = Up_Block(filters=self.filters * 4)
@@ -75,5 +76,55 @@ class Up_Block(Model):
         con_transpose = self.con_transpose(inputs)
         bn = self.bn(con_transpose)
         out = self.act(bn)
+
+        return out
+
+#
+# class Discriminator(Model):
+#     def __init__(self, input_shape):
+#         super(Discriminator, self).__init__()
+#         self.vgg19 = tf.keras.applications.vgg19.VGG19(include_top=False, input_shape=input_shape)
+#         # layer_ids = [2, 5, 8, 13, 18]
+#
+#         # base_model_outputs = [m_tf.layers[layer_id].output for layer_id in layer_ids]
+#         # self.model = Model(inputs=m_tf.input, outputs=base_model_outputs)
+#         # self.model.trainable = False
+#
+#     def call(self, inputs, training=None, mask=None):
+#         # return self.model(inputs)
+#
+#         out = self.vgg19(inputs)
+
+
+class Discriminator(Model):
+    def __init__(self):
+        super(Discriminator, self).__init__()
+
+        self.down1 = Down_Sample(filters=64)
+        self.down2 = Down_Sample(filters=128)
+        self.down3 = Down_Sample(filters=256)
+        # self.down4 = Down_Sample(filters=256)
+
+        self.con = Con_Bn_Act(filters=512,
+                              kernel_size=3,
+                              strides=1,
+                              kernel_initializer=tf.random_normal_initializer(0., 0.02),
+                              activation=LeakyReLU(),
+                              padding='same')
+
+        self.out = Conv2D(filters=1,
+                          kernel_size=3,
+                          strides=1,
+                          kernel_initializer=tf.random_normal_initializer(0., 0.02),
+                          padding='same')
+
+    def call(self, inputs, training=None, mask=None):
+        [inp, tar] = inputs
+        concat = concatenate([inp, tar], axis=3)
+        down1 = self.down1(concat)
+        down2 = self.down2(down1)
+        down3 = self.down3(down2)
+        con = self.con(down3)
+        out = self.out(con)
 
         return out
