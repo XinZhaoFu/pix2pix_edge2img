@@ -1,9 +1,9 @@
 import datetime
 import tensorflow as tf
 from loss.pix2pix_loss import discriminator_loss, generator_loss
-# from model.pix2pix import Generator, Discriminator
-from model.pix2pixhd import Generator, Discriminator
-from data_utils.data_loader import Data_Loader
+from model.pix2pix import Discriminator, Unet_Generator, Generator
+# from model.pix2pixhd import Generator, Discriminator
+from data_utils.img2img_data_loader import Data_Loader
 # from tensorflow.keras import mixed_precision
 
 
@@ -28,12 +28,13 @@ class Pix2pix_Trainer:
         self.data_loader = Data_Loader(batch_size=self.batch_size, size=self.data_size)
         self.train_datasets = self.data_loader.get_train_datasets()
         self.val_datasets = self.data_loader.get_val_datasets()
-        print(self.train_datasets)
-        self.generator = Generator()
+        # print(self.train_datasets)
+
+        self.generator = Unet_Generator()
         self.discriminator = Discriminator()
 
-        self.generator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
-        self.discriminator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
+        self.generator_optimizer = tf.keras.optimizers.Adam()
+        self.discriminator_optimizer = tf.keras.optimizers.Adam()
 
         self.checkpoint = tf.train.Checkpoint(generator_optimizer=self.generator_optimizer,
                                               discriminator_optimizer=self.discriminator_optimizer,
@@ -93,16 +94,16 @@ class Pix2pix_Trainer:
 
 
 def main():
-    ex_name = 'pix2pixhd_256'
-    checkpoint_dir = './checkpoints/pix2pixhd256_checkpoints/'
+    ex_name = 'pix2pix_unet512'
+    checkpoint_dir = './checkpoints/pix2pix_unet512_checkpoints/'
 
     start_time = datetime.datetime.now()
     trainer = Pix2pix_Trainer(ex_name=ex_name,
-                              epochs=10*1000,
-                              batch_size=8,
+                              epochs=400*1000,
+                              batch_size=4,
                               checkpoint_dir=checkpoint_dir,
-                              data_size=256,
-                              load_weights=True)
+                              data_size=512,
+                              load_weights=False)
     trainer.train()
 
     end_time = datetime.datetime.now()

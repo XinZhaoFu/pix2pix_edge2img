@@ -1,7 +1,94 @@
 import tensorflow as tf
-from model.utils import Con_Bn_Act
+from model.unet import Up_CBR_Block
+from model.utils import Con_Bn_Act, CBR_Block
 from tensorflow.keras import Model
-from tensorflow.keras.layers import LeakyReLU, concatenate, Conv2D, Conv2DTranspose, BatchNormalization
+from tensorflow.keras.layers import LeakyReLU, concatenate, Conv2D, Conv2DTranspose, BatchNormalization, ReLU, MaxPooling2D
+
+
+class Unet_Generator(Model):
+    def __init__(self,
+                 semantic_filters=64,
+                 detail_filters=64,
+                 output_channels=3,
+                 semantic_num_cbr=1,
+                 detail_num_cbr=4,
+                 end_activation='sigmoid'):
+        super(Unet_Generator, self).__init__()
+        self.semantic_filters = semantic_filters
+        self.output_channels = output_channels
+        self.semantic_num_cbr = semantic_num_cbr
+        self.detail_num_cbr = detail_num_cbr
+        self.end_activation = end_activation
+        self.detail_filters = detail_filters
+
+        self.cbr_block1 = CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='down1')
+        self.cbr_block2 = CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='down2')
+        self.cbr_block3 = CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='down3')
+        self.cbr_block4 = CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='down4')
+        self.cbr_block5 = CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='down5')
+        self.cbr_block6 = CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='down6')
+        self.cbr_block7 = CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='down7')
+
+        self.cbr_block_up7 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up7')
+        self.cbr_block_up6 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up6')
+        self.cbr_block_up5 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up5')
+        self.cbr_block_up4 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up4')
+        self.cbr_block_up3 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up3')
+        self.cbr_block_up2 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up2')
+        self.cbr_block_up1 = CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up1')
+
+        self.cbr_block_detail = CBR_Block(filters=self.detail_filters, num_cbr=self.detail_num_cbr, block_name='detail')
+
+        self.con_end = Con_Bn_Act(filters=self.output_channels, activation=self.end_activation)
+
+        self.pool = MaxPooling2D(padding='same')
+
+    def call(self, inputs, training=None, mask=None):
+        con1 = self.cbr_block1(inputs)
+        detail = self.cbr_block_detail(con1)
+
+        pool2 = self.pool(con1)
+        con2 = self.cbr_block2(pool2)
+
+        pool3 = self.pool(con2)
+        con3 = self.cbr_block3(pool3)
+
+        pool4 = self.pool(con3)
+        con4 = self.cbr_block4(pool4)
+
+        pool5 = self.pool(con4)
+        con5 = self.cbr_block5(pool5)
+
+        pool6 = self.pool(con5)
+        con6 = self.cbr_block6(pool6)
+
+        pool7 = self.pool(con6)
+        con7 = self.cbr_block7(pool7)
+
+        up7 = self.cbr_block_up7(con7)
+
+        merge6 = concatenate([up7, con6], axis=3)
+        up6 = self.cbr_block_up6(merge6)
+
+        merge5 = concatenate([up6, con5], axis=3)
+        up5 = self.cbr_block_up5(merge5)
+
+        merge4 = concatenate([up5, con4], axis=3)
+        up4 = self.cbr_block_up4(merge4)
+
+        merge3 = concatenate([up4, con3], axis=3)
+        up3 = self.cbr_block_up3(merge3)
+
+        merge2 = concatenate([up3, con2], axis=3)
+        up2 = self.cbr_block_up2(merge2)
+
+        merge1 = concatenate([up2, detail], axis=3)
+        up1 = self.cbr_block_up1(merge1)
+
+        out = self.con_end(up1)
+
+        return out
+
 
 
 class Generator(Model):
@@ -11,7 +98,7 @@ class Generator(Model):
         self.layer_nums = layer_nums
         self.filters = filters
 
-        self.con_act = LeakyReLU()
+        self.con_act = ReLU()
 
         self.down1_1 = Con_Bn_Act(filters=self.filters, activation=self.con_act)  # 512
         self.down1_2 = Down_Sample(filters=self.filters * 2)  # 256
@@ -51,7 +138,7 @@ class Generator(Model):
                           kernel_size=3,
                           strides=1,
                           padding='same',
-                          activation='tanh')  # 512
+                          activation='sigmoid')  # 512
 
     def call(self, inputs, training=None, mask=None):
         down1_1 = self.down1_1(inputs)
@@ -91,6 +178,7 @@ class Generator(Model):
         out = self.out(up1_4)
 
         return out
+
 
 # class Generator(Model):
 #     def __init__(self, filters=64, layer_nums=8, output_channel=3):
@@ -157,18 +245,12 @@ class Discriminator(Model):
         self.down1 = Down_Sample(filters=64)
         self.down2 = Down_Sample(filters=128)
         self.down3 = Down_Sample(filters=256)
+        self.down4 = Down_Sample(filters=512)
 
-        self.con = Con_Bn_Act(filters=512,
-                              kernel_size=3,
-                              strides=1,
-                              kernel_initializer=tf.random_normal_initializer(0., 0.02),
-                              activation=LeakyReLU(),
-                              padding='same')
+        self.con = Con_Bn_Act(filters=1024)
 
         self.out = Conv2D(filters=1,
                           kernel_size=3,
-                          strides=1,
-                          kernel_initializer=tf.random_normal_initializer(0., 0.02),
                           padding='same')
 
     def call(self, inputs, training=None, mask=None):
@@ -186,10 +268,7 @@ class Discriminator(Model):
 class Down_Sample(Model):
     def __init__(self, filters):
         super().__init__()
-        self.down = Con_Bn_Act(filters=filters,
-                               strides=2,
-                               kernel_initializer=tf.random_normal_initializer(0., 0.02),
-                               activation=LeakyReLU())
+        self.down = Con_Bn_Act(filters=filters, strides=2)
 
     def call(self, inputs, training=None, mask=None):
         out = self.down(inputs)
@@ -204,10 +283,9 @@ class Up_Sample(Model):
                                              kernel_size=3,
                                              strides=2,
                                              padding='same',
-                                             kernel_initializer=tf.random_normal_initializer(0., 0.02),
                                              use_bias=False)
         self.bn = BatchNormalization()
-        self.act = LeakyReLU()
+        self.act = ReLU()
 
     def call(self, inputs, training=None, mask=None):
         con_transpose = self.con_transpose(inputs)

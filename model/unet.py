@@ -80,7 +80,7 @@ class UNet(Model):
         merge2 = concatenate([up3, con2], axis=3)
         up2 = self.cbr_block_up2(merge2)
 
-        merge1 = concatenate([up2, con1, detail], axis=3)
+        merge1 = concatenate([up2, detail], axis=3)
         up1 = self.cbr_block_up1(merge1)
 
         out = self.con_end(up1)

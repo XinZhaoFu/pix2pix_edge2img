@@ -1,3 +1,4 @@
+# from model.pix2pixhd import Generator, Discriminator
 from model.pix2pix import Generator, Discriminator
 import numpy as np
 import tensorflow as tf
@@ -14,8 +15,8 @@ class Pix2pix_predicter:
         self.discriminator = Discriminator()
         self.checkpoint_dir = checkpoint_dir
 
-        self.generator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
-        self.discriminator_optimizer = tf.keras.optimizers.Adam(2e-4, beta_1=0.5)
+        self.generator_optimizer = tf.keras.optimizers.Adam()
+        self.discriminator_optimizer = tf.keras.optimizers.Adam()
 
         self.checkpoint = tf.train.Checkpoint(generator_optimizer=self.generator_optimizer,
                                               discriminator_optimizer=self.discriminator_optimizer,
@@ -34,13 +35,13 @@ class Pix2pix_predicter:
 
     def predict(self, img):
         test_input = np.zeros(shape=(1, self.data_size, self.data_size, 3), dtype=np.float32)
-        img = (img / 127.5) - 1
+        img = img / 255.
         test_input[0:, :, :, :] = img[:, :, :]
 
         prediction = self.generator(test_input, training=False)
         # print(prediction)
 
-        prediction = (prediction * 0.5 + 0.5) * 255
+        prediction = prediction * 255
         prediction_output = np.empty(shape=(self.data_size, self.data_size, 3), dtype=np.uint8)
         prediction_output[:, :, :] = prediction[0:, :, :, :]
 
@@ -48,8 +49,8 @@ class Pix2pix_predicter:
 
 
 def main():
-    ex_name = 'pix2pixhd_512'
-    checkpoint_dir = './checkpoints/pix2pixhd512_checkpoints/'
+    ex_name = 'pix2pix_512'
+    checkpoint_dir = './checkpoints/pix2pix512_checkpoints/'
     data_size = 512
 
     val_img_path = './data/val/img/'
