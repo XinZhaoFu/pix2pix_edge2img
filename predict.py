@@ -1,5 +1,5 @@
 # from model.pix2pixhd import Generator, Discriminator
-from model.pix2pix import Generator, Discriminator
+from model.pix2pix import Unet_Generator, Discriminator
 import numpy as np
 import tensorflow as tf
 import cv2
@@ -11,7 +11,7 @@ class Pix2pix_predicter:
     def __init__(self, ex_name, checkpoint_dir, data_size):
         self.data_size = data_size
         self.ex_name = ex_name
-        self.generator = Generator()
+        self.generator = Unet_Generator()
         self.discriminator = Discriminator()
         self.checkpoint_dir = checkpoint_dir
 
@@ -30,8 +30,6 @@ class Pix2pix_predicter:
         self.checkpoint.restore(self.ck_manager.latest_checkpoint)
         if self.ck_manager.latest_checkpoint:
             print("[info]Restored from {}".format(self.ck_manager.latest_checkpoint))
-        else:
-            print("[info]Initializing from scratch.")
 
     def predict(self, img):
         test_input = np.zeros(shape=(1, self.data_size, self.data_size, 3), dtype=np.float32)
@@ -49,8 +47,8 @@ class Pix2pix_predicter:
 
 
 def main():
-    ex_name = 'pix2pix_512'
-    checkpoint_dir = './checkpoints/pix2pix512_checkpoints/'
+    ex_name = 'pix2pix_unet512'
+    checkpoint_dir = './checkpoints/pix2pix_unet512_checkpoints/'
     data_size = 512
 
     val_img_path = './data/val/img/'

@@ -69,20 +69,22 @@ class Con_Bn_Act(Model):
 
 
 class CBR_Block(Model):
-    def __init__(self, filters, num_cbr=1, block_name=None):
+    def __init__(self, filters, num_cbr=1, block_name=None, activation=None):
         super(CBR_Block, self).__init__()
         self.filters = filters
         self.num_cbr = num_cbr
         self.block_name = None
+        self.activation = activation
         if block_name is not None and type(block_name) == str:
             self.block_name = block_name
 
         self.con_blocks = Sequential()
         for index in range(self.num_cbr):
             if self.block_name is not None:
-                block = Con_Bn_Act(filters=self.filters, name=self.block_name + '_Con_Block_' + str(index+1))
+                block = Con_Bn_Act(filters=self.filters, name=self.block_name + '_Con_Block_' + str(index+1),
+                                   activation=self.activation)
             else:
-                block = Con_Bn_Act(filters=self.filters, name='Con_Block_' + str(index + 1))
+                block = Con_Bn_Act(filters=self.filters, name='Con_Block_' + str(index + 1), activation=self.activation)
             self.con_blocks.add(block)
 
     def call(self, inputs, training=None, mask=None):
