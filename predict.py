@@ -1,5 +1,5 @@
 # from model.pix2pixhd import Generator, Discriminator
-from model.pix2pix import Unet_Generator, Discriminator
+from model.pix2pix import Unet_Generator, Discriminator, MUnet_Generator
 import numpy as np
 import tensorflow as tf
 import cv2
@@ -11,17 +11,10 @@ class Pix2pix_predicter:
     def __init__(self, ex_name, checkpoint_dir, data_size):
         self.data_size = data_size
         self.ex_name = ex_name
-        self.generator = Unet_Generator()
-        self.discriminator = Discriminator()
+        self.generator = MUnet_Generator()
         self.checkpoint_dir = checkpoint_dir
 
-        self.generator_optimizer = tf.keras.optimizers.Adam()
-        self.discriminator_optimizer = tf.keras.optimizers.Adam()
-
-        self.checkpoint = tf.train.Checkpoint(generator_optimizer=self.generator_optimizer,
-                                              discriminator_optimizer=self.discriminator_optimizer,
-                                              generator=self.generator,
-                                              discriminator=self.discriminator)
+        self.checkpoint = tf.train.Checkpoint(generator=self.generator)
         self.ck_manager = tf.train.CheckpointManager(self.checkpoint,
                                                      directory=self.checkpoint_dir,
                                                      max_to_keep=1,
@@ -37,7 +30,6 @@ class Pix2pix_predicter:
         test_input[0:, :, :, :] = img[:, :, :]
 
         prediction = self.generator(test_input, training=False)
-        # print(prediction)
 
         prediction = prediction * 255
         prediction_output = np.empty(shape=(self.data_size, self.data_size, 3), dtype=np.uint8)
@@ -47,8 +39,8 @@ class Pix2pix_predicter:
 
 
 def main():
-    ex_name = 'pix2pix_unet512'
-    checkpoint_dir = './checkpoints/pix2pix_unet512_checkpoints/'
+    ex_name = 'pix2pix_munet512'
+    checkpoint_dir = './checkpoints/pix2pix_munet512_checkpoints/'
     data_size = 512
 
     val_img_path = './data/val/img/'

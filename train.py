@@ -1,7 +1,7 @@
 import datetime
 import tensorflow as tf
-from loss.pix2pix_loss import discriminator_loss, generator_loss
-from model.pix2pix import Discriminator, Unet_Generator, Generator
+from loss.pix2pix_loss import discriminator_loss, generator_loss, multi_discriminator_loss
+from model.pix2pix import Discriminator, Unet_Generator, Generator, MUnet_Generator, Multi_Discriminator
 # from model.pix2pixhd import Generator, Discriminator
 from data_utils.img2img_data_loader import Data_Loader
 # from tensorflow.keras import mixed_precision
@@ -30,8 +30,8 @@ class Pix2pix_Trainer:
         self.val_datasets = self.data_loader.get_val_datasets()
         # print(self.train_datasets)
 
-        self.generator = Unet_Generator()
-        self.discriminator = Discriminator()
+        self.generator = MUnet_Generator()
+        self.discriminator = Multi_Discriminator()
 
         self.generator_optimizer = tf.keras.optimizers.Adam()
         self.discriminator_optimizer = tf.keras.optimizers.Adam()
@@ -75,7 +75,7 @@ class Pix2pix_Trainer:
             disc_generated_output = self.discriminator([input_image, gen_output], training=True)
 
             gen_total_loss, gen_gan_loss, gen_l1_loss = generator_loss(disc_generated_output, gen_output, target)
-            disc_loss = discriminator_loss(disc_real_output, disc_generated_output)
+            disc_loss = multi_discriminator_loss(disc_real_output, disc_generated_output)
 
         generator_gradients = gen_tape.gradient(gen_total_loss, self.generator.trainable_variables)
         discriminator_gradients = disc_tape.gradient(disc_loss, self.discriminator.trainable_variables)
@@ -94,8 +94,8 @@ class Pix2pix_Trainer:
 
 
 def main():
-    ex_name = 'pix2pix_unet512'
-    checkpoint_dir = './checkpoints/pix2pix_unet512_checkpoints/'
+    ex_name = 'pix2pix_mmunet512'
+    checkpoint_dir = './checkpoints/pix2pix_mmunet512_checkpoints/'
 
     start_time = datetime.datetime.now()
     trainer = Pix2pix_Trainer(ex_name=ex_name,

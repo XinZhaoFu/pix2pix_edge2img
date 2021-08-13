@@ -2,67 +2,71 @@ import tensorflow as tf
 from model.unet import Up_CBR_Block
 from model.utils import Con_Bn_Act, CBR_Block
 from tensorflow.keras import Model
-from tensorflow.keras.layers import LeakyReLU, concatenate, Conv2D, Conv2DTranspose, BatchNormalization, ReLU, MaxPooling2D
+from tensorflow.keras.layers import LeakyReLU, concatenate, Conv2D, Conv2DTranspose, BatchNormalization, ReLU, \
+    MaxPooling2D, Activation
 
 
 class MUnet_Generator(Model):
     def __init__(self,
-                 semantic_filters=64,
+                 semantic_filters=32,
                  detail_filters=64,
                  output_channels=3,
                  detail_num_cbr=4,
-                 end_activation='tanh'):
+                 end_activation='sigmoid'):
         super(MUnet_Generator, self).__init__()
         self.semantic_filters = semantic_filters
         self.output_channels = output_channels
         self.detail_num_cbr = detail_num_cbr
         self.end_activation = end_activation
         self.detail_filters = detail_filters
-        self.act = LeakyReLU()
 
-        self.cbr_block1 = Con_Bn_Act(filters=self.semantic_filters, activation=self.act)
-        self.cbr_block2 = Con_Bn_Act(filters=self.semantic_filters, activation=self.act)
-        self.cbr_block3 = Con_Bn_Act(filters=self.semantic_filters, activation=self.act)
-        self.cbr_block4 = Con_Bn_Act(filters=self.semantic_filters, activation=self.act)
-        self.cbr_block5 = Con_Bn_Act(filters=self.semantic_filters, activation=self.act)
-        self.cbr_block6 = Con_Bn_Act(filters=self.semantic_filters, activation=self.act)
-        self.cbr_block7 = Con_Bn_Act(filters=self.semantic_filters, activation=self.act)
+        self.cbr_block1_1 = Con_Bn_Act(filters=self.detail_filters)
+        self.cbr_block1_2 = Con_Bn_Act(filters=self.semantic_filters * 2, strides=2)
+        self.cbr_block2_1 = Con_Bn_Act(filters=self.semantic_filters)
+        self.cbr_block2_2 = Con_Bn_Act(filters=self.semantic_filters * 2, strides=2)
+        self.cbr_block3_1 = Con_Bn_Act(filters=self.semantic_filters)
+        self.cbr_block3_2 = Con_Bn_Act(filters=self.semantic_filters * 2, strides=2)
+        self.cbr_block4_1 = Con_Bn_Act(filters=self.semantic_filters)
+        self.cbr_block4_2 = Con_Bn_Act(filters=self.semantic_filters * 2, strides=2)
+        self.cbr_block5_1 = Con_Bn_Act(filters=self.semantic_filters)
+        self.cbr_block5_2 = Con_Bn_Act(filters=self.semantic_filters * 2, strides=2)
+        self.cbr_block6_1 = Con_Bn_Act(filters=self.semantic_filters)
+        self.cbr_block6_2 = Con_Bn_Act(filters=self.semantic_filters * 2, strides=2)
+        self.cbr_block7 = Con_Bn_Act(filters=self.semantic_filters)
 
-        self.cbr_block_up7 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up7')
-        self.cbr_block_up6 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up6')
-        self.cbr_block_up5 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up5')
-        self.cbr_block_up4 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up4')
-        self.cbr_block_up3 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up3')
-        self.cbr_block_up2 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up2')
-        self.cbr_block_up1 = Con_Bn_Act(filters=self.semantic_filters, activation=self.act)
+        self.cbr_block_up7 = Up_CBR_Block(filters=self.semantic_filters)
+        self.cbr_block_up6 = Up_CBR_Block(filters=self.semantic_filters)
+        self.cbr_block_up5 = Up_CBR_Block(filters=self.semantic_filters)
+        self.cbr_block_up4 = Up_CBR_Block(filters=self.semantic_filters)
+        self.cbr_block_up3 = Up_CBR_Block(filters=self.semantic_filters)
+        self.cbr_block_up2 = Up_CBR_Block(filters=self.semantic_filters)
+        self.cbr_block_up1 = Con_Bn_Act(filters=self.semantic_filters)
 
         self.cbr_block_detail = CBR_Block(filters=self.detail_filters, num_cbr=self.detail_num_cbr,
-                                          block_name='detail', activation=self.act)
+                                          block_name='detail')
 
         self.con_end = Con_Bn_Act(filters=self.output_channels, activation=self.end_activation)
 
-        self.pool = Con_Bn_Act(filters=self.semantic_filters * 2, strides=2, activation=self.act)
-
     def call(self, inputs, training=None, mask=None):
-        con1 = self.cbr_block1(inputs)
+        con1 = self.cbr_block1_1(inputs)
         detail = self.cbr_block_detail(con1)
 
-        pool2 = self.pool(con1)
-        con2 = self.cbr_block2(pool2)
+        pool2 = self.cbr_block1_2(con1)
+        con2 = self.cbr_block2_1(pool2)
 
-        pool3 = self.pool(con2)
-        con3 = self.cbr_block3(pool3)
+        pool3 = self.cbr_block2_2(con2)
+        con3 = self.cbr_block3_1(pool3)
 
-        pool4 = self.pool(con3)
-        con4 = self.cbr_block4(pool4)
+        pool4 = self.cbr_block3_2(con3)
+        con4 = self.cbr_block4_1(pool4)
 
-        pool5 = self.pool(con4)
-        con5 = self.cbr_block5(pool5)
+        pool5 = self.cbr_block4_2(con4)
+        con5 = self.cbr_block5_1(pool5)
 
-        pool6 = self.pool(con5)
-        con6 = self.cbr_block6(pool6)
+        pool6 = self.cbr_block5_2(con5)
+        con6 = self.cbr_block6_1(pool6)
 
-        pool7 = self.pool(con6)
+        pool7 = self.cbr_block6_2(con6)
         con7 = self.cbr_block7(pool7)
 
         up7 = self.cbr_block_up7(con7)
@@ -114,12 +118,18 @@ class Unet_Generator(Model):
         self.cbr_block6 = CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='down6')
         self.cbr_block7 = CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='down7')
 
-        self.cbr_block_up7 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up7')
-        self.cbr_block_up6 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up6')
-        self.cbr_block_up5 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up5')
-        self.cbr_block_up4 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up4')
-        self.cbr_block_up3 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up3')
-        self.cbr_block_up2 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up2')
+        self.cbr_block_up7 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr,
+                                          block_name='up7')
+        self.cbr_block_up6 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr,
+                                          block_name='up6')
+        self.cbr_block_up5 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr,
+                                          block_name='up5')
+        self.cbr_block_up4 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr,
+                                          block_name='up4')
+        self.cbr_block_up3 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr,
+                                          block_name='up3')
+        self.cbr_block_up2 = Up_CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr,
+                                          block_name='up2')
         self.cbr_block_up1 = CBR_Block(filters=self.semantic_filters, num_cbr=self.semantic_num_cbr, block_name='up1')
 
         self.cbr_block_detail = CBR_Block(filters=self.detail_filters, num_cbr=self.detail_num_cbr, block_name='detail')
@@ -173,7 +183,6 @@ class Unet_Generator(Model):
         out = self.con_end(up1)
 
         return out
-
 
 
 class Generator(Model):
@@ -378,3 +387,63 @@ class Up_Sample(Model):
         out = self.act(bn)
 
         return out
+
+
+class Vgg19_Discriminator(tf.keras.Model):
+    def __init__(self, input_shape):
+        super(Vgg19_Discriminator, self).__init__()
+        m_tf = tf.keras.applications.vgg19.VGG19(include_top=False, input_shape=input_shape)
+        layer_ids = [2, 5, 8, 13, 18]
+
+        base_model_outputs = [m_tf.layers[layer_id].output for layer_id in layer_ids]
+        self.model = tf.keras.Model(inputs=m_tf.input, outputs=base_model_outputs)
+        self.model.trainable = False
+
+    def call(self, inputs, training=None, mask=None):
+        return self.model(inputs)
+
+
+class Multi_Discriminator(Model):
+    def __init__(self):
+        super(Multi_Discriminator, self).__init__()
+
+        self.down1 = Down_Sample(filters=64)
+        self.down2 = Down_Sample(filters=128)
+        self.down2_con = CBR_Block(filters=128, num_cbr=2)
+        self.down2_out = Conv2D(filters=1, kernel_size=3, padding='same')
+
+        self.down3 = Down_Sample(filters=256)
+        self.down3_con = CBR_Block(filters=256, num_cbr=2)
+        self.down3_out = Conv2D(filters=1, kernel_size=3, padding='same')
+
+        self.down4 = Down_Sample(filters=512)
+        self.down4_con = CBR_Block(filters=512, num_cbr=2)
+        self.down4_out = Conv2D(filters=1, kernel_size=3, padding='same')
+
+        self.down5 = Down_Sample(filters=1024)
+        self.con = Con_Bn_Act(filters=1024)
+
+        self.out = Conv2D(filters=1, kernel_size=3, padding='same')
+
+    def call(self, inputs, training=None, mask=None):
+        [inp, tar] = inputs
+        concat = concatenate([inp, tar], axis=3)
+        down1 = self.down1(concat)
+        down2 = self.down2(down1)
+        down2_con = self.down2_con(down2)
+        down2_out = self.down2_out(down2_con)
+
+        down3 = self.down3(down2)
+        down3_con = self.down3_con(down3)
+        down3_out = self.down3_out(down3_con)
+
+        down4 = self.down4(down3)
+        down4_con = self.down4_con(down4)
+        down4_out = self.down4_out(down4_con)
+
+        down5 = self.down5(down4)
+        con = self.con(down5)
+        out = self.out(con)
+
+        return [down2_out, down3_out, down4_out, out]
+
