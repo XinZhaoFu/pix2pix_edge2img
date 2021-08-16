@@ -15,9 +15,10 @@ def discriminator_loss(disc_real_output, disc_generated_output):
 
 def generator_loss(disc_generated_output, gen_output, target, loss_lambda=100):
     loss_object = tf.keras.losses.BinaryCrossentropy(from_logits=True)
-    down2_out, down3_out, down4_out, out = disc_generated_output
+    # down2_out, down3_out, down4_out, out = disc_generated_output
 
-    gan_loss = loss_object(tf.ones_like(out), out)
+    # gan_loss = loss_object(tf.ones_like(out), out)
+    gan_loss = loss_object(tf.ones_like(disc_generated_output), disc_generated_output)
     l1_loss = tf.reduce_mean(tf.abs(target - gen_output))
 
     total_gen_loss = gan_loss + (loss_lambda * l1_loss)
@@ -42,28 +43,15 @@ class VGG19_Discriminator_Loss(tf.keras.losses.Loss):
         return loss
 
 
-def dice_bce_loss():
-    bce = tf.keras.losses.binary_crossentropy
-    smooth = 1.0
-
-    def dice_bce_loss_fixed(y_true, y_pred):
-        y_true_sum = tf.reduce_sum(y_true)
-        y_pred_sum = tf.reduce_sum(y_pred)
-        intersection = tf.reduce_sum(y_true * y_pred)
-
-        dice_loss = 1 - (2.0 * intersection + smooth) / (y_true_sum + y_pred_sum + smooth)
-        bce_loss = bce(y_true, y_pred)
-        loss = dice_loss * 0.5 + bce_loss * 0.5
-
-        return loss
-
-    return dice_bce_loss_fixed
-
-
 def multi_discriminator_loss(disc_real_output, disc_generated_output):
     loss_object = tf.keras.losses.BinaryCrossentropy(from_logits=True)
     real_down2_out, real_down3_out, real_down4_out, real_out = disc_real_output
     generated_down2_out, generated_down3_out, generated_down4_out, generated_out = disc_generated_output
+
+    real_loss, generated_loss = 0, 0
+    real_out, disc_out = [], []
+    for index in range(4):
+        disc_out[index] = loss_object(tf.ones_like(disc_real_output[index]), disc_real_output[index])
 
     real_down2_out_loss = loss_object(tf.ones_like(real_down2_out), real_down2_out)
     real_down3_out_loss = loss_object(tf.ones_like(real_down3_out), real_down3_out)
@@ -80,6 +68,7 @@ def multi_discriminator_loss(disc_real_output, disc_generated_output):
 
     generated_loss = generated_down2_out_loss * 1. / 8 + generated_down3_out_loss * 1. / 4 + \
                      generated_down4_out_loss * 1. / 2 + generated_out_loss * 1.
+
     total_disc_loss = real_loss + generated_loss
 
     return total_disc_loss

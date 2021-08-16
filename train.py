@@ -31,7 +31,7 @@ class Pix2pix_Trainer:
         # print(self.train_datasets)
 
         self.generator = MUnet_Generator()
-        self.discriminator = Multi_Discriminator()
+        self.discriminator = Discriminator()
 
         self.generator_optimizer = tf.keras.optimizers.Adam()
         self.discriminator_optimizer = tf.keras.optimizers.Adam()
@@ -66,7 +66,6 @@ class Pix2pix_Trainer:
             if (step + 1) % 1000 == 0:
                 self.ck_manager.save()
 
-    @tf.function
     def train_step(self, input_image, target, step):
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
             gen_output = self.generator(input_image, training=True)
@@ -75,7 +74,7 @@ class Pix2pix_Trainer:
             disc_generated_output = self.discriminator([input_image, gen_output], training=True)
 
             gen_total_loss, gen_gan_loss, gen_l1_loss = generator_loss(disc_generated_output, gen_output, target)
-            disc_loss = multi_discriminator_loss(disc_real_output, disc_generated_output)
+            disc_loss = discriminator_loss(disc_real_output, disc_generated_output)
 
         generator_gradients = gen_tape.gradient(gen_total_loss, self.generator.trainable_variables)
         discriminator_gradients = disc_tape.gradient(disc_loss, self.discriminator.trainable_variables)
@@ -94,13 +93,13 @@ class Pix2pix_Trainer:
 
 
 def main():
-    ex_name = 'pix2pix_mmunet512'
-    checkpoint_dir = './checkpoints/pix2pix_mmunet512_checkpoints/'
+    ex_name = 'pix2pix_mdunet512'
+    checkpoint_dir = './checkpoints/pix2pix_mdunet512_checkpoints/'
 
     start_time = datetime.datetime.now()
     trainer = Pix2pix_Trainer(ex_name=ex_name,
                               epochs=400*1000,
-                              batch_size=4,
+                              batch_size=2,
                               checkpoint_dir=checkpoint_dir,
                               data_size=512,
                               load_weights=False)

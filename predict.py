@@ -1,5 +1,4 @@
-# from model.pix2pixhd import Generator, Discriminator
-from model.pix2pix import Unet_Generator, Discriminator, MUnet_Generator
+from model.pix2pix import Unet_Generator, MUnet_Generator
 import numpy as np
 import tensorflow as tf
 import cv2
@@ -39,8 +38,8 @@ class Pix2pix_predicter:
 
 
 def main():
-    ex_name = 'pix2pix_munet512'
-    checkpoint_dir = './checkpoints/pix2pix_munet512_checkpoints/'
+    ex_name = 'pix2pix_mmunet512'
+    checkpoint_dir = './checkpoints/pix2pix_mmunet512_checkpoints/'
     data_size = 512
 
     val_img_path = './data/val/img/'
