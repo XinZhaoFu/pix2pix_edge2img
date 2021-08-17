@@ -15,10 +15,15 @@ def discriminator_loss(disc_real_output, disc_generated_output):
 
 def generator_loss(disc_generated_output, gen_output, target, loss_lambda=100):
     loss_object = tf.keras.losses.BinaryCrossentropy(from_logits=True)
-    # down2_out, down3_out, down4_out, out = disc_generated_output
 
-    # gan_loss = loss_object(tf.ones_like(out), out)
-    gan_loss = loss_object(tf.ones_like(disc_generated_output), disc_generated_output)
+    gan_loss = 0
+    for disc_generated_out in disc_generated_output:
+        gan_loss += loss_object(tf.ones_like(disc_generated_out), disc_generated_out)
+
+    # # down2_out, down3_out, down4_out, out = disc_generated_output
+    #
+    # # gan_loss = loss_object(tf.ones_like(out), out)
+    # gan_loss = loss_object(tf.ones_like(disc_generated_output), disc_generated_output)
     l1_loss = tf.reduce_mean(tf.abs(target - gen_output))
 
     total_gen_loss = gan_loss + (loss_lambda * l1_loss)

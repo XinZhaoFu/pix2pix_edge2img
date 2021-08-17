@@ -448,7 +448,7 @@ class Multi_Discriminator(Model):
         return [down2_out, down3_out, down4_out, out]
 
 
-class MultiscaleDiscriminator(tf.keras.Model):
+class MultiscaleDiscriminator(Model):
     def __init__(self, filters=64):
         super(MultiscaleDiscriminator, self).__init__()
         self.filters = filters
@@ -460,6 +460,9 @@ class MultiscaleDiscriminator(tf.keras.Model):
         self.discriminator4 = NLayerDiscriminator(filters=self.filters)
 
     def call(self, inputs, training=None, mask=None):
+        [inp, tar] = inputs
+        inputs = concatenate([inp, tar], axis=3)
+
         discriminator1 = self.discriminator1(inputs)
 
         inputs = self.pooling(inputs)
@@ -474,7 +477,7 @@ class MultiscaleDiscriminator(tf.keras.Model):
         return [discriminator1, discriminator2, discriminator3, discriminator4]
 
 
-class NLayerDiscriminator(tf.keras.Model):
+class NLayerDiscriminator(Model):
     def __init__(self, layers_num=3, filters=64):
         super(NLayerDiscriminator, self).__init__()
         self.layers_num = layers_num
