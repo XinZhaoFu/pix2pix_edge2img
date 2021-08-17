@@ -447,3 +447,48 @@ class Multi_Discriminator(Model):
 
         return [down2_out, down3_out, down4_out, out]
 
+
+class MultiscaleDiscriminator(tf.keras.Model):
+    def __init__(self, filters=64):
+        super(MultiscaleDiscriminator, self).__init__()
+        self.filters = filters
+
+        self.pooling = MaxPooling2D(padding='same')
+        self.discriminator1 = NLayerDiscriminator(filters=self.filters)
+        self.discriminator2 = NLayerDiscriminator(filters=self.filters)
+        self.discriminator3 = NLayerDiscriminator(filters=self.filters)
+        self.discriminator4 = NLayerDiscriminator(filters=self.filters)
+
+    def call(self, inputs, training=None, mask=None):
+        discriminator1 = self.discriminator1(inputs)
+
+        inputs = self.pooling(inputs)
+        discriminator2 = self.discriminator2(inputs)
+
+        inputs = self.pooling(inputs)
+        discriminator3 = self.discriminator3(inputs)
+
+        inputs = self.pooling(inputs)
+        discriminator4 = self.discriminator4(inputs)
+
+        return [discriminator1, discriminator2, discriminator3, discriminator4]
+
+
+class NLayerDiscriminator(tf.keras.Model):
+    def __init__(self, layers_num=3, filters=64):
+        super(NLayerDiscriminator, self).__init__()
+        self.layers_num = layers_num
+        self.filters = filters
+
+        self.cbr1 = Con_Bn_Act(filters=self.filters, strides=2)
+        self.cbr2 = Con_Bn_Act(filters=self.filters * 2, strides=2)
+        self.cbr3 = Con_Bn_Act(filters=self.filters * 4, strides=2)
+        self.cbr4 = Con_Bn_Act(filters=self.filters * 8, strides=2, activation='not')
+
+    def call(self, inputs, training=None, mask=None):
+        cbr1 = self.cbr1(inputs)
+        cbr2 = self.cbr2(cbr1)
+        cbr3 = self.cbr3(cbr2)
+        out = self.cbr4(cbr3)
+
+        return out

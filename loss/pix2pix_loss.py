@@ -45,30 +45,12 @@ class VGG19_Discriminator_Loss(tf.keras.losses.Loss):
 
 def multi_discriminator_loss(disc_real_output, disc_generated_output):
     loss_object = tf.keras.losses.BinaryCrossentropy(from_logits=True)
-    real_down2_out, real_down3_out, real_down4_out, real_out = disc_real_output
-    generated_down2_out, generated_down3_out, generated_down4_out, generated_out = disc_generated_output
 
-    real_loss, generated_loss = 0, 0
-    real_out, disc_out = [], []
-    for index in range(4):
-        disc_out[index] = loss_object(tf.ones_like(disc_real_output[index]), disc_real_output[index])
-
-    real_down2_out_loss = loss_object(tf.ones_like(real_down2_out), real_down2_out)
-    real_down3_out_loss = loss_object(tf.ones_like(real_down3_out), real_down3_out)
-    real_down4_out_loss = loss_object(tf.ones_like(real_down4_out), real_down4_out)
-    real_out_loss = loss_object(tf.ones_like(real_out), real_out)
-
-    real_loss = real_down2_out_loss * 1. / 8 + real_down3_out_loss * 1. / 4 + \
-                real_down4_out_loss * 1. / 2 + real_out_loss * 1.
-
-    generated_down2_out_loss = loss_object(tf.zeros_like(generated_down2_out), generated_down2_out)
-    generated_down3_out_loss = loss_object(tf.zeros_like(generated_down3_out), generated_down3_out)
-    generated_down4_out_loss = loss_object(tf.zeros_like(generated_down4_out), generated_down4_out)
-    generated_out_loss = loss_object(tf.zeros_like(generated_out), generated_out)
-
-    generated_loss = generated_down2_out_loss * 1. / 8 + generated_down3_out_loss * 1. / 4 + \
-                     generated_down4_out_loss * 1. / 2 + generated_out_loss * 1.
-
-    total_disc_loss = real_loss + generated_loss
+    total_disc_loss = 0
+    alpha_rate = 1. / 8
+    for real_out, generated_out in zip(disc_real_output, disc_generated_output):
+        total_disc_loss += loss_object(tf.ones_like(real_out), real_out) * alpha_rate
+        total_disc_loss += loss_object(tf.zeros_like(generated_out), generated_out) * alpha_rate
+        alpha_rate *= 2
 
     return total_disc_loss
