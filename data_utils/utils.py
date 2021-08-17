@@ -44,3 +44,5 @@ def recreate_dir(folder_name):
         shutil.rmtree(folder_name)
         os.makedirs(folder_name)
     print('[INFO] 重建文件夹：' + folder_name)
+
+

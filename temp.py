@@ -1,4 +1,5 @@
 import os
+import numpy as np
 from glob import glob
 
 # img_file_list = glob('./data/food_datasets/food_023/*.jpg')
@@ -8,8 +9,10 @@ from glob import glob
 # for index, img_file in enumerate(img_file_list):
 #     os.rename(img_file, './data/food_datasets/food_023/' + str(index) + '.jpg')
 
-nums1 = [1, 3, 5, 7]
-nums2 = [2, 4, 6, 8]
+# img_name = 'frozen_yogurt_000738108.jpg'
+# os.remove('./data/food_datasets/img/' + img_name)
+# os.remove('./data/food_datasets/label/' + img_name)
 
-for index, [num1, num2] in enumerate(zip(nums1, nums2)):
-    print(index, num1, num2)
+np_temp = np.random.rand(10, 10)
+np_temp = np_temp[2:8, 3:7]
+print(np_temp)
