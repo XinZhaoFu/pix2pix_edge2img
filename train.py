@@ -100,7 +100,7 @@ def main():
     start_time = datetime.datetime.now()
     trainer = Pix2pix_Trainer(ex_name=ex_name,
                               epochs=400*1000,
-                              batch_size=4,
+                              batch_size=2,
                               checkpoint_dir=checkpoint_dir,
                               data_size=512,
                               load_weights=False)

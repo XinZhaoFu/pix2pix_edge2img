@@ -9,7 +9,7 @@ from tensorflow.keras.layers import LeakyReLU, concatenate, Conv2D, Conv2DTransp
 class MUnet_Generator(Model):
     def __init__(self,
                  semantic_filters=32,
-                 detail_filters=32,
+                 detail_filters=64,
                  output_channels=3,
                  detail_num_cbr=4,
                  end_activation='sigmoid'):
