@@ -38,8 +38,8 @@ class Pix2pix_predicter:
 
 
 def main():
-    ex_name = 'pix2pix_mdunet512'
-    checkpoint_dir = './checkpoints/pix2pix_mdunet512_checkpoints/'
+    ex_name = 'pix2pixhd_mrmunet512'
+    checkpoint_dir = './checkpoints/pix2pixhd_mrmunet512_checkpoints/'
     data_size = 512
 
     val_img_path = './data/val/img/'

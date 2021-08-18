@@ -94,13 +94,13 @@ class Pix2pix_Trainer:
 
 
 def main():
-    ex_name = 'pix2pixhd_mmunet512'
-    checkpoint_dir = './checkpoints/pix2pixhd_mmunet512_checkpoints/'
+    ex_name = 'pix2pixhd_mrmunet512'
+    checkpoint_dir = './checkpoints/pix2pixhd_mrmunet512_checkpoints/'
 
     start_time = datetime.datetime.now()
     trainer = Pix2pix_Trainer(ex_name=ex_name,
                               epochs=400*1000,
-                              batch_size=2,
+                              batch_size=4,
                               checkpoint_dir=checkpoint_dir,
                               data_size=512,
                               load_weights=False)

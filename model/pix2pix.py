@@ -1,6 +1,6 @@
 import tensorflow as tf
 from model.unet import Up_CBR_Block
-from model.utils import Con_Bn_Act, CBR_Block
+from model.utils import Con_Bn_Act, CBR_Block, Res_CBR_Block
 from tensorflow.keras import Model
 from tensorflow.keras.layers import LeakyReLU, concatenate, Conv2D, Conv2DTranspose, BatchNormalization, ReLU, \
     MaxPooling2D, Activation
@@ -9,7 +9,7 @@ from tensorflow.keras.layers import LeakyReLU, concatenate, Conv2D, Conv2DTransp
 class MUnet_Generator(Model):
     def __init__(self,
                  semantic_filters=32,
-                 detail_filters=64,
+                 detail_filters=32,
                  output_channels=3,
                  detail_num_cbr=4,
                  end_activation='sigmoid'):
@@ -42,8 +42,9 @@ class MUnet_Generator(Model):
         self.cbr_block_up2 = Up_CBR_Block(filters=self.semantic_filters)
         self.cbr_block_up1 = Con_Bn_Act(filters=self.semantic_filters)
 
-        self.cbr_block_detail = CBR_Block(filters=self.detail_filters, num_cbr=self.detail_num_cbr,
-                                          block_name='detail')
+        self.cbr_block_detail = Res_CBR_Block(filters=self.detail_filters,
+                                              num_cbr=self.detail_num_cbr,
+                                              block_name='detail')
 
         self.con_end = Con_Bn_Act(filters=self.output_channels, activation=self.end_activation)
 
@@ -484,9 +485,9 @@ class NLayerDiscriminator(Model):
         self.filters = filters
 
         self.cbr1 = Con_Bn_Act(filters=self.filters, strides=2)
-        self.cbr2 = Con_Bn_Act(filters=self.filters * 2, strides=2)
-        self.cbr3 = Con_Bn_Act(filters=self.filters * 4, strides=2)
-        self.cbr4 = Con_Bn_Act(filters=self.filters * 8, strides=2, activation='not')
+        self.cbr2 = Con_Bn_Act(filters=self.filters, strides=2)
+        self.cbr3 = Con_Bn_Act(filters=self.filters, strides=2)
+        self.cbr4 = Con_Bn_Act(filters=self.filters, strides=2, activation='not')
 
     def call(self, inputs, training=None, mask=None):
         cbr1 = self.cbr1(inputs)
