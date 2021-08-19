@@ -3,7 +3,7 @@ from model.unet import Up_CBR_Block
 from model.utils import Con_Bn_Act, CBR_Block, Res_CBR_Block
 from tensorflow.keras import Model
 from tensorflow.keras.layers import LeakyReLU, concatenate, Conv2D, Conv2DTranspose, BatchNormalization, ReLU, \
-    MaxPooling2D, Activation
+    MaxPooling2D, Activation, AveragePooling2D
 
 
 class MUnet_Generator(Model):
@@ -42,9 +42,9 @@ class MUnet_Generator(Model):
         self.cbr_block_up2 = Up_CBR_Block(filters=self.semantic_filters)
         self.cbr_block_up1 = Con_Bn_Act(filters=self.semantic_filters)
 
-        self.cbr_block_detail = Res_CBR_Block(filters=self.detail_filters,
-                                              num_cbr=self.detail_num_cbr,
-                                              block_name='detail')
+        self.cbr_block_detail = CBR_Block(filters=self.detail_filters,
+                                          num_cbr=self.detail_num_cbr,
+                                          block_name='detail')
 
         self.con_end = Con_Bn_Act(filters=self.output_channels, activation=self.end_activation)
 
@@ -454,7 +454,7 @@ class MultiscaleDiscriminator(Model):
         super(MultiscaleDiscriminator, self).__init__()
         self.filters = filters
 
-        self.pooling = MaxPooling2D(padding='same')
+        self.pooling = AveragePooling2D(padding='same')
         self.discriminator1 = NLayerDiscriminator(filters=self.filters)
         self.discriminator2 = NLayerDiscriminator(filters=self.filters)
         self.discriminator3 = NLayerDiscriminator(filters=self.filters)
@@ -479,20 +479,22 @@ class MultiscaleDiscriminator(Model):
 
 
 class NLayerDiscriminator(Model):
-    def __init__(self, layers_num=3, filters=64):
+    def __init__(self, filters=64):
         super(NLayerDiscriminator, self).__init__()
-        self.layers_num = layers_num
         self.filters = filters
 
         self.cbr1 = Con_Bn_Act(filters=self.filters, strides=2)
-        self.cbr2 = Con_Bn_Act(filters=self.filters, strides=2)
-        self.cbr3 = Con_Bn_Act(filters=self.filters, strides=2)
-        self.cbr4 = Con_Bn_Act(filters=self.filters, strides=2, activation='not')
+        self.cbr2 = Con_Bn_Act(filters=self.filters * 2, strides=2)
+        self.cbr3 = Con_Bn_Act(filters=self.filters * 4, strides=2)
+        self.cbr4 = Con_Bn_Act(filters=self.filters * 8, strides=2)
+
+        self.out = Conv2D(filters=1, kernel_size=(3, 3), padding='same')
 
     def call(self, inputs, training=None, mask=None):
         cbr1 = self.cbr1(inputs)
         cbr2 = self.cbr2(cbr1)
         cbr3 = self.cbr3(cbr2)
-        out = self.cbr4(cbr3)
+        cbr4 = self.cbr4(cbr3)
+        out = self.out(cbr4)
 
         return out

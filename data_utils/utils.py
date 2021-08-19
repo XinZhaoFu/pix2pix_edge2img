@@ -147,3 +147,42 @@ def mosaic(ori_images, ori_labels, res_size=512):
     res_label[center_random_row:, center_random_col:, :] = crop_label4
 
     return res_img, res_label
+
+
+def random_flip(img, label):
+    """
+    做一个随机翻转
+
+    :param img:
+    :param label:
+    :return:
+    """
+    random_num = randint(0, 1)
+    img = cv2.flip(img, random_num)
+    label = cv2.flip(label, random_num)
+
+    return img, label
+
+
+def random_rotate(img, label):
+    """
+    做一个随机旋转 但只有0 90 180 和270
+
+    :param img:
+    :param label:
+    :return:
+    """
+    img_rows, img_cols, _ = img.shape
+    label_rows, label_cols, _ = label.shape
+    random_num = randint(0, 3)
+    img_rotate = cv2.getRotationMatrix2D((img_rows * 0.5, img_cols * 0.5), 90 * random_num, 1)
+    label_rotate = cv2.getRotationMatrix2D((label_rows * 0.5, label_cols * 0.5), 90 * random_num, 1)
+    if random_num == 2:
+        img = cv2.warpAffine(img, img_rotate, (img_rows, img_cols))
+        label = cv2.warpAffine(label, label_rotate, (label_rows, label_cols))
+    else:
+        img = cv2.warpAffine(img, img_rotate, (img_cols, img_rows))
+        label = cv2.warpAffine(label, label_rotate, (label_cols, label_rows))
+
+    return img, label
+

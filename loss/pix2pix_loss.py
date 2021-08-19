@@ -51,11 +51,12 @@ class VGG19_Discriminator_Loss(tf.keras.losses.Loss):
 def multi_discriminator_loss(disc_real_output, disc_generated_output):
     loss_object = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
-    total_disc_loss = 0
-    alpha_rate = 1. / 8
+    total_disc_loss, real_disc_loss, generator_disc_loss = 0, 0, 0
+    alpha_rate = 1.
     for real_out, generated_out in zip(disc_real_output, disc_generated_output):
-        total_disc_loss += loss_object(tf.ones_like(real_out), real_out) * alpha_rate
-        total_disc_loss += loss_object(tf.zeros_like(generated_out), generated_out) * alpha_rate
-        alpha_rate *= 2
+        real_disc_loss += (loss_object(tf.ones_like(real_out), real_out) * alpha_rate)
+        generator_disc_loss += (loss_object(tf.zeros_like(generated_out), generated_out) * alpha_rate)
+        # alpha_rate *= 2
+    total_disc_loss = real_disc_loss + generator_disc_loss
 
-    return total_disc_loss
+    return total_disc_loss, real_disc_loss, generator_disc_loss

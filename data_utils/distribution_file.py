@@ -5,10 +5,10 @@ from utils import shuffle_file, recreate_dir
 
 
 def distribution_datasets():
-    split_rate = 0.9
+    split_rate = 0.98
 
-    datasets_img_path = '../data/food_datasets/img/'
-    datasets_label_path = '../data/food_datasets/label/'
+    datasets_img_path = '../data/food_datasets/img_aug/'
+    datasets_label_path = '../data/food_datasets/label_aug/'
 
     train_img_path = '../data/train/img/'
     train_label_path = '../data/train/label/'

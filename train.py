@@ -57,13 +57,16 @@ class Pix2pix_Trainer:
             print("[info]Initializing from scratch.")
 
         for step, (input_image, target) in self.train_datasets.repeat().take(self.epochs).enumerate():
-            gen_total_loss, gen_gan_loss, gen_l1_loss, disc_loss = self.train_step(input_image, target, step)
+            gen_total_loss, gen_gan_loss, gen_l1_loss, total_disc_loss, real_disc_loss, generator_disc_loss = \
+                self.train_step(input_image, target, step)
             if (step + 1) % 100 == 0:
                 print(f"Step: {step // 100}h"
                       + '\tgen_total_loss:' + str(gen_total_loss)
                       + '\tgen_gan_loss:' + str(gen_gan_loss)
                       + '\tgen_l1_loss:' + str(gen_l1_loss)
-                      + '\tdisc_loss:' + str(disc_loss))
+                      + '\n\t\ttotal_disc_loss:' + str(total_disc_loss)
+                      + '\treal_disc_loss:' + str(real_disc_loss)
+                      + '\tgenerator_disc_loss:' + str(generator_disc_loss))
             if (step + 1) % 1000 == 0:
                 self.ck_manager.save()
 
@@ -75,31 +78,32 @@ class Pix2pix_Trainer:
             disc_generated_output = self.discriminator([input_image, gen_output], training=True)
 
             gen_total_loss, gen_gan_loss, gen_l1_loss = generator_loss(disc_generated_output, gen_output, target)
-            disc_loss = multi_discriminator_loss(disc_real_output, disc_generated_output)
+            total_disc_loss, real_disc_loss, generator_disc_loss = multi_discriminator_loss(disc_real_output,
+                                                                                            disc_generated_output)
 
         generator_gradients = gen_tape.gradient(gen_total_loss, self.generator.trainable_variables)
-        discriminator_gradients = disc_tape.gradient(disc_loss, self.discriminator.trainable_variables)
+        discriminator_gradients = disc_tape.gradient(total_disc_loss, self.discriminator.trainable_variables)
 
         self.generator_optimizer.apply_gradients(zip(generator_gradients, self.generator.trainable_variables))
         self.discriminator_optimizer.apply_gradients(
             zip(discriminator_gradients, self.discriminator.trainable_variables))
+        #
+        # with self.summary_writer.as_default():
+        #     tf.summary.scalar('gen_total_loss', gen_total_loss, step=step // 1000)
+        #     tf.summary.scalar('gen_gan_loss', gen_gan_loss, step=step // 1000)
+        #     tf.summary.scalar('gen_l1_loss', gen_l1_loss, step=step // 1000)
+        #     tf.summary.scalar('disc_loss', disc_loss, step=step // 1000)
 
-        with self.summary_writer.as_default():
-            tf.summary.scalar('gen_total_loss', gen_total_loss, step=step // 1000)
-            tf.summary.scalar('gen_gan_loss', gen_gan_loss, step=step // 1000)
-            tf.summary.scalar('gen_l1_loss', gen_l1_loss, step=step // 1000)
-            tf.summary.scalar('disc_loss', disc_loss, step=step // 1000)
-
-        return gen_total_loss, gen_gan_loss, gen_l1_loss, disc_loss
+        return gen_total_loss, gen_gan_loss, gen_l1_loss, total_disc_loss, real_disc_loss, generator_disc_loss
 
 
 def main():
-    ex_name = 'pix2pixhd_mrmunet512'
-    checkpoint_dir = './checkpoints/pix2pixhd_mrmunet512_checkpoints/'
+    ex_name = 'pix2pixhd_mmunet512_19'
+    checkpoint_dir = './checkpoints/pix2pixhd_mmunet512_checkpoints_19/'
 
     start_time = datetime.datetime.now()
     trainer = Pix2pix_Trainer(ex_name=ex_name,
-                              epochs=400*1000,
+                              epochs=800*1000,
                               batch_size=2,
                               checkpoint_dir=checkpoint_dir,
                               data_size=512,

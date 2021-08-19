@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from glob import glob
+from random import randint
 
 # img_file_list = glob('./data/food_datasets/food_023/*.jpg')
 # img_file_list = img_file_list[:3]
@@ -13,6 +14,10 @@ from glob import glob
 # os.remove('./data/food_datasets/img/' + img_name)
 # os.remove('./data/food_datasets/label/' + img_name)
 
-np_temp = np.random.rand(10, 10)
-np_temp = np_temp[2:8, 3:7]
-print(np_temp)
+# np_temp = np.random.rand(10, 10)
+# np_temp = np_temp[2:8, 3:7]
+# print(np_temp)
+
+for _ in range(20):
+    random_num = randint(0, 3)
+    print(random_num)

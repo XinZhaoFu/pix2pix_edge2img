@@ -1,7 +1,7 @@
 import cv2
 from glob import glob
 from tqdm import tqdm
-from data_utils.utils import shuffle_file, mosaic, random_crop
+from data_utils.utils import shuffle_file, mosaic, random_crop, random_flip, random_rotate
 
 
 def augmentation():
@@ -26,8 +26,14 @@ def augmentation():
         cv2.imwrite(aug_img_save_path + img_name + '.jpg', img)
         cv2.imwrite(aug_label_save_path + img_name + '.jpg', label)
 
+        # random_flip
+        flip_img, flip_label = random_flip(img, label)
+
+        # random_rotate
+        rotate_img, rotate_label = random_rotate(flip_img, flip_label)
+
         # random_crop
-        crop_img, crop_label = random_crop(img, label)
+        crop_img, crop_label = random_crop(rotate_img, rotate_label)
         cv2.imwrite(aug_img_save_path + img_name + '_crop.jpg', crop_img)
         cv2.imwrite(aug_label_save_path + img_name + '_crop.jpg', crop_label)
 
