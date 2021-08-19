@@ -5,7 +5,7 @@ from data_utils.utils import shuffle_file
 
 class Data_Loader:
     def __init__(self,
-                 buffer_size=420,
+                 buffer_size=256,
                  batch_size=1,
                  size=256):
         self.buffer_size = buffer_size
@@ -43,8 +43,8 @@ class Data_Loader:
         img = tf.image.resize(img, [self.size, self.size], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
         label = tf.image.resize(label, [self.size, self.size], method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
 
-        img = (img / 127.5) - 1
-        label = (label / 127.5) - 1
+        img = img / 255.
+        label = label / 255.
 
         return img, label
 

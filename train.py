@@ -3,8 +3,7 @@ import tensorflow as tf
 from loss.pix2pix_loss import discriminator_loss, generator_loss, multi_discriminator_loss
 from model.pix2pix import Discriminator, Unet_Generator, Generator, MUnet_Generator, Multi_Discriminator, \
     MultiscaleDiscriminator
-# from model.pix2pixhd import Generator, Discriminator
-from data_utils.img2img_data_loader import Data_Loader
+from data_utils.data_loader import Data_Loader
 # from tensorflow.keras import mixed_precision
 
 

@@ -1,5 +1,7 @@
 from tensorflow.keras.layers import Conv2D, BatchNormalization, Activation, concatenate, add
 from tensorflow.keras import Model, regularizers, Sequential
+from tensorflow.python.keras import Model
+from tensorflow.python.keras.layers import UpSampling2D
 
 
 class Con_Bn_Act(Model):
@@ -153,4 +155,22 @@ class Res_CBR_Block(Model):
     def call(self, inputs, training=None, mask=None):
         out = self.con_blocks(inputs)
 
+        return out
+
+
+class Up_CBR_Block(Model):
+    def __init__(self, filters, num_cbr=1, block_name='', activation=None):
+        super(Up_CBR_Block, self).__init__()
+        self.filters = filters
+        self.num_cbr = num_cbr
+        self.block_name = block_name
+        self.activation = activation
+
+        self.con_blocks = CBR_Block(filters=self.filters, num_cbr=self.num_cbr, block_name=self.block_name,
+                                    activation=self.activation)
+        self.up = UpSampling2D(name=self.block_name + '_up_sampling')
+
+    def call(self, inputs, training=None, mask=None):
+        con = self.con_blocks(inputs)
+        out = self.up(con)
         return out

@@ -1,6 +1,5 @@
 import tensorflow as tf
-from model.unet import Up_CBR_Block
-from model.utils import Con_Bn_Act, CBR_Block, Res_CBR_Block
+from model.utils import Con_Bn_Act, CBR_Block, Res_CBR_Block, Up_CBR_Block
 from tensorflow.keras import Model
 from tensorflow.keras.layers import LeakyReLU, concatenate, Conv2D, Conv2DTranspose, BatchNormalization, ReLU, \
     MaxPooling2D, Activation, AveragePooling2D
